@@ -1,0 +1,40 @@
+# Therapeutic Area Configuration
+therapeutic_areas:
+  - name: "Oncology"
+    keywords:
+      - "cancer"
+      - "tumor"
+      - "oncology"
+      - "neoplasm"
+      - "malignant"
+      - "carcinoma"
+
+# Data Collection Settings
+# Configuration for fetching data from ClinicalTrials.gov
+data_collection:
+  clinical_trials:
+    base_url: "https://clinicaltrials.gov/api/v2/studies"
+    fields:
+      - "NCTId"           # Unique trial identifier
+      - "BriefTitle"      # Trial title
+      - "Condition"       # Medical condition
+      - "Phase"          # Trial phase (1, 2, 3, 4)
+      - "InterventionName" # Treatment being tested
+      - "LeadSponsor"    # Company running the trial
+      - "StartDate"      # When the trial started
+      - "CompletionDate" # When the trial ended
+    max_results: 100     # Maximum number of trials to fetch
+
+# Google Gemini API Settings
+# Configuration for the AI analysis
+gemini:
+  model: "gemini-pro"    # The AI model to use
+  temperature: 0.7      # Controls randomness (0-1)
+  max_output_tokens: 1024  # Maximum length of AI response
+
+# Output Settings
+# Where and how to save results
+output:
+  summary_format: "markdown"  # Format for saving results
+  save_path: "output/"       # Directory for saved files
+  update_frequency: "daily"  # How often to update
