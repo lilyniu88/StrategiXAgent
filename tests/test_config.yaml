@@ -1,0 +1,16 @@
+therapeutic_area: "Oncology"
+disease_condition: "Breast Cancer"
+search_terms:
+  - "breast cancer"
+  - "metastatic breast cancer"
+  - "HER2 positive"
+  - "triple negative"
+
+analysis_settings:
+  min_phase: "Phase 1"
+  max_results: 10
+  update_frequency: "weekly"
+
+output:
+  format: "json"
+  directory: "output" 
