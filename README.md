@@ -1,4 +1,3 @@
-test
 # StrategiX Agent - Pharmaceutical Competitive Intelligence Tool
 
 An AI-powered assistant that helps commercial teams track the competitive landscape in specific therapeutic areas using Google's Gemini API.
