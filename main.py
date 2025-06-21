@@ -45,7 +45,10 @@ class StrategiXAgent:
         """Load configuration from YAML file."""
         try:
             with open(self.config_path, 'r') as file:
-                return yaml.safe_load(file)
+                config = yaml.safe_load(file)
+            if config is None:
+                raise ValueError("Config file is empty or invalid YAML")
+            return config
         except Exception as e:
             logger.error(f"Error loading config: {e}")
             raise
@@ -53,7 +56,7 @@ class StrategiXAgent:
     def _ensure_output_directory(self):
         """Ensure the output directory exists."""
         output_path = Path(self.config['output']['save_path'])
-        output_path.mkdir(exist_ok=True)
+        output_path.mkdir(exist_ok=True)  # type: ignore
         return output_path
         
     def collect_data(self) -> List[Dict[str, Any]]:

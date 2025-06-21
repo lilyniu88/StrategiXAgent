@@ -6,6 +6,8 @@ def test_new_api():
     # Read config
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
+    if config is None:
+        raise ValueError("Config file is empty or invalid YAML")
     
     # Get API settings
     base_url = config['data_collection']['clinical_trials']['base_url']

@@ -54,6 +54,9 @@ def test_config():
     try:
         with open('config.yaml', 'r') as f:
             config = yaml.safe_load(f)
+        if config is None:
+            logger.error("✗ Config file is empty or invalid YAML")
+            return False
             
         # Check required sections
         required_sections = ['therapeutic_areas', 'data_collection', 'gemini', 'output']
@@ -104,9 +107,11 @@ def test_output_directory():
     try:
         with open('config.yaml', 'r') as f:
             config = yaml.safe_load(f)
-            
+        if config is None:
+            logger.error("✗ Config file is empty or invalid YAML")
+            return False
         output_path = Path(config['output']['save_path'])
-        output_path.mkdir(exist_ok=True)
+        output_path.mkdir(exist_ok=True)  # type: ignore
         
         logger.info(f"✓ Output directory ready: {output_path}")
         return True
@@ -140,8 +145,8 @@ def test_api_connection():
                 import google.generativeai as genai
                 genai.configure(api_key=api_key)
                 
-                # Try a simple test
-                model = genai.GenerativeModel('gemini-pro')
+                # Try a simple test with the correct model name
+                model = genai.GenerativeModel('gemini-2.0-flash-exp')
                 response = model.generate_content("Hello, this is a test.")
                 
                 logger.info("✓ Google Gemini API accessible")
@@ -149,6 +154,8 @@ def test_api_connection():
                 logger.warning("⚠ Skipping Google Gemini API test (no valid API key)")
         except ImportError:
             logger.warning("⚠ Google Generative AI not installed - skipping Gemini API test")
+        except Exception as e:
+            logger.warning(f"⚠ Google Gemini API test failed: {e}")
             
         return True
         

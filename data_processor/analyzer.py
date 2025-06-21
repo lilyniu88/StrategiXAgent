@@ -32,7 +32,10 @@ class ClinicalTrialAnalyzer:
         """Load configuration from YAML file."""
         try:
             with open(config_path, 'r') as file:
-                return yaml.safe_load(file)
+                config = yaml.safe_load(file)
+            if config is None:
+                raise ValueError("Config file is empty or invalid YAML")
+            return config
         except Exception as e:
             logger.error(f"Error loading config: {e}")
             raise

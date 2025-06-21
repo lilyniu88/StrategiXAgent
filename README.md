@@ -155,9 +155,6 @@ The application generates several output files in the `output/` directory:
 ### Logs
 Check `strategix_agent.log` for detailed execution logs.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Development Setup
 1. Fork the repository
@@ -165,7 +162,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
