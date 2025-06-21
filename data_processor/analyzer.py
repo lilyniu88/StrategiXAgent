@@ -1,6 +1,5 @@
 import os
 import yaml
-import google.generativeai as genai
 from typing import Dict, List, Any
 import logging
 from dotenv import load_dotenv
@@ -9,6 +8,14 @@ from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import google.generativeai, but don't fail if it's not available
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logger.warning("google.generativeai not available. AI analysis features will be disabled.")
+
 class ClinicalTrialAnalyzer:
     def __init__(self, config_path: str = "config.yaml"):
         """Initialize the analyzer with configuration settings."""
@@ -16,7 +23,10 @@ class ClinicalTrialAnalyzer:
         load_dotenv()
         
         self.config = self._load_config(config_path)
-        self._setup_gemini()
+        if GEMINI_AVAILABLE:
+            self._setup_gemini()
+        else:
+            logger.warning("Gemini AI not available - analysis features disabled")
         
     def _load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file."""
@@ -29,6 +39,9 @@ class ClinicalTrialAnalyzer:
             
     def _setup_gemini(self):
         """Set up Gemini API with API key from environment."""
+        if not GEMINI_AVAILABLE:
+            return
+            
         api_key = os.getenv('GOOGLE_API_KEY')
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not found in environment variables. Please create a .env file with your API key.")
@@ -44,22 +57,56 @@ class ClinicalTrialAnalyzer:
         Returns:
             Dictionary containing analysis results
         """
+        if not GEMINI_AVAILABLE:
+            # Return basic analysis without AI
+            protocol_section = trial_data.get('protocolSection', {})
+            identification = protocol_section.get('identificationModule', {})
+            status = protocol_section.get('statusModule', {})
+            sponsor = protocol_section.get('sponsorCollaboratorsModule', {})
+            
+            title = identification.get('briefTitle', '')
+            status_text = status.get('overallStatus', '')
+            sponsor_name = sponsor.get('leadSponsor', {}).get('name', '')
+            
+            return {
+                'trial_id': identification.get('nctId', ''),
+                'title': title,
+                'analysis': f"Basic analysis: Trial {title} by {sponsor_name} is in {status_text} status. AI analysis not available.",
+                'metadata': {
+                    'phase': 'Not analyzed',
+                    'status': status_text,
+                    'sponsor': sponsor_name
+                }
+            }
+            
         try:
-            # Extract relevant information
-            title = trial_data.get('BriefTitle', '')
-            phase = trial_data.get('Phase', '')
-            status = trial_data.get('OverallStatus', '')
-            sponsor = trial_data.get('LeadSponsor', {}).get('Name', '')
+            # Extract relevant information from the new API structure
+            protocol_section = trial_data.get('protocolSection', {})
+            identification = protocol_section.get('identificationModule', {})
+            status = protocol_section.get('statusModule', {})
+            sponsor = protocol_section.get('sponsorCollaboratorsModule', {})
+            
+            title = identification.get('briefTitle', '')
+            status_text = status.get('overallStatus', '')
+            sponsor_name = sponsor.get('leadSponsor', {}).get('name', '')
+            
+            # Get phase information
+            design_module = protocol_section.get('designModule', {})
+            phases = design_module.get('phases', [])
+            phase = ', '.join(phases) if phases else 'Not specified'
+            
+            # Get model name from config
+            model_name = self.config.get('gemini', {}).get('model', 'gemini-2.0-flash-exp')
             
             # Generate analysis using Gemini
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel(model_name)
             
             prompt = f"""
             Analyze this clinical trial and provide insights:
             Title: {title}
             Phase: {phase}
-            Status: {status}
-            Sponsor: {sponsor}
+            Status: {status_text}
+            Sponsor: {sponsor_name}
             
             Please provide:
             1. Key therapeutic focus
@@ -71,21 +118,27 @@ class ClinicalTrialAnalyzer:
             response = model.generate_content(prompt)
             
             return {
-                'trial_id': trial_data.get('NCTId', ''),
+                'trial_id': identification.get('nctId', ''),
                 'title': title,
                 'analysis': response.text,
                 'metadata': {
                     'phase': phase,
-                    'status': status,
-                    'sponsor': sponsor
+                    'status': status_text,
+                    'sponsor': sponsor_name
                 }
             }
             
         except Exception as e:
             logger.error(f"Error analyzing trial: {e}")
             return {
-                'trial_id': trial_data.get('NCTId', ''),
-                'error': str(e)
+                'trial_id': trial_data.get('protocolSection', {}).get('identificationModule', {}).get('nctId', ''),
+                'title': trial_data.get('protocolSection', {}).get('identificationModule', {}).get('briefTitle', 'Unknown'),
+                'analysis': f"Analysis failed: {str(e)}",
+                'metadata': {
+                    'phase': 'Error',
+                    'status': 'Error',
+                    'sponsor': 'Error'
+                }
             }
             
     def analyze_trials_batch(self, trials_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -114,13 +167,42 @@ class ClinicalTrialAnalyzer:
         Returns:
             String containing the landscape summary
         """
-        try:
-            model = genai.GenerativeModel('gemini-pro')
+        if not GEMINI_AVAILABLE:
+            # Generate basic summary without AI
+            trial_count = len(analyses)
+            sponsors = set()
+            for analysis in analyses:
+                sponsor = analysis.get('metadata', {}).get('sponsor', 'Unknown')
+                if sponsor and sponsor != 'Error':
+                    sponsors.add(sponsor)
             
-            # Prepare context from analyses
+            return f"""
+            Basic Competitive Landscape Summary (AI analysis not available)
+            
+            Total trials analyzed: {trial_count}
+            Number of unique sponsors: {len(sponsors)}
+            Sponsors: {', '.join(sponsors) if sponsors else 'None identified'}
+            
+            Note: For detailed AI-powered analysis, install google-generativeai package.
+            """
+            
+        try:
+            # Get model name from config
+            model_name = self.config.get('gemini', {}).get('model', 'gemini-2.0-flash-exp')
+            model = genai.GenerativeModel(model_name)
+            
+            # Prepare context from analyses, filtering out failed analyses
+            valid_analyses = []
+            for analysis in analyses:
+                if analysis.get('title') and analysis.get('analysis') and not analysis.get('analysis', '').startswith('Analysis failed:'):
+                    valid_analyses.append(analysis)
+            
+            if not valid_analyses:
+                return "No valid analyses available for summary generation."
+            
             context = "\n\n".join([
-                f"Trial: {analysis['title']}\nAnalysis: {analysis['analysis']}"
-                for analysis in analyses
+                f"Trial: {analysis.get('title', 'Unknown')}\nAnalysis: {analysis.get('analysis', 'No analysis available')}"
+                for analysis in valid_analyses
             ])
             
             prompt = f"""
