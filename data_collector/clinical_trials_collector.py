@@ -15,30 +15,29 @@ class ClinicalTrialsCollector:
         self.base_url = config['data_collection']['clinical_trials']['base_url']
         self.fields = config['data_collection']['clinical_trials']['fields']
         self.max_results = config['data_collection']['clinical_trials']['max_results']
-        self.therapeutic_areas = config['therapeutic_areas']
         
-    def build_query_params(self, therapeutic_area: Dict[str, Any]) -> Dict[str, str]:
+    def build_query_params(self, research_config: Dict[str, Any]) -> Dict[str, str]:
         """Build query parameters for the ClinicalTrials.gov API v2."""
         # Only use pageSize for the first page
         return {
             'pageSize': str(min(self.max_results, 100))
         }
         
-    def fetch_trials(self, therapeutic_area: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def fetch_trials(self, research_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Fetch clinical trials for a specific therapeutic area.
+        Fetch clinical trials for a specific research configuration.
         
         Args:
-            therapeutic_area: Dictionary containing therapeutic area configuration
+            research_config: Dictionary containing research configuration
             
         Returns:
             List of clinical trial data dictionaries
         """
         try:
-            logger.info(f"Fetching trials for therapeutic area: {therapeutic_area['name']}")
+            logger.info(f"Fetching trials for research: {research_config['name']}")
             
             # Build query parameters
-            params = self.build_query_params(therapeutic_area)
+            params = self.build_query_params(research_config)
             
             # Make API request
             response = requests.get(self.base_url, params=params, timeout=30)
@@ -48,46 +47,44 @@ class ClinicalTrialsCollector:
             data = response.json()
             studies = data.get('studies', [])
             
-            # Filter studies by therapeutic area keywords
+            # Filter studies by research keywords
             filtered_studies = []
-            keywords = [k.lower() for k in therapeutic_area['keywords']]
+            keywords = [k.lower() for k in research_config['keywords']]
             
             for study in studies:
                 # Check if any keyword appears in the study data
                 study_text = str(study).lower()
                 if any(keyword in study_text for keyword in keywords):
-                    study['therapeutic_area'] = therapeutic_area['name']
+                    study['research_area'] = research_config['name']
+                    study['research_type'] = research_config['research_type']
+                    study['original_topic'] = research_config['original_topic']
                     filtered_studies.append(study)
             
-            logger.info(f"Retrieved {len(filtered_studies)} relevant trials for {therapeutic_area['name']} out of {len(studies)} total")
+            logger.info(f"Retrieved {len(filtered_studies)} relevant trials for {research_config['name']} out of {len(studies)} total")
             
             return filtered_studies
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching trials for {therapeutic_area['name']}: {e}")
+            logger.error(f"Error fetching trials for {research_config['name']}: {e}")
             return []
         except Exception as e:
-            logger.error(f"Unexpected error fetching trials for {therapeutic_area['name']}: {e}")
+            logger.error(f"Unexpected error fetching trials for {research_config['name']}: {e}")
             return []
             
-    def fetch_all_trials(self) -> List[Dict[str, Any]]:
+    def fetch_trials_for_research(self, research_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Fetch clinical trials for all configured therapeutic areas.
+        Fetch clinical trials for a specific research configuration.
         
+        Args:
+            research_config: Research configuration dictionary
+            
         Returns:
-            List of all clinical trial data dictionaries
+            List of clinical trial data dictionaries
         """
-        all_trials = []
+        trials = self.fetch_trials(research_config)
         
-        for therapeutic_area in self.therapeutic_areas:
-            trials = self.fetch_trials(therapeutic_area)
-            all_trials.extend(trials)
-            
-            # Add a small delay between requests to be respectful to the API
-            time.sleep(1)
-            
-        logger.info(f"Total trials collected: {len(all_trials)}")
-        return all_trials
+        logger.info(f"Total trials collected for {research_config['name']}: {len(trials)}")
+        return trials
         
     def filter_active_trials(self, trials: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -138,5 +135,7 @@ class ClinicalTrialsCollector:
             'intervention': trial.get('intervention', ''),
             'start_date': status.get('startDateStruct', {}).get('date', ''),
             'completion_date': status.get('completionDateStruct', {}).get('date', ''),
-            'therapeutic_area': trial.get('therapeutic_area', '')
+            'research_area': trial.get('research_area', ''),
+            'research_type': trial.get('research_type', ''),
+            'original_topic': trial.get('original_topic', '')
         } 
