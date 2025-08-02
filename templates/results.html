@@ -54,9 +54,9 @@
             <!-- Executive Summary -->
             <div class="card shadow-lg mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
+                    <h3 class="mb-0 fw-bold">
                         <i class="fas fa-chart-bar me-2"></i>Executive Summary
-                    </h5>
+                    </h3>
                 </div>
                 <div class="card-body">
                     <div class="summary-content">
@@ -135,14 +135,37 @@ $(document).ready(function() {
 function formatSummaryContent() {
     const summaryContent = $('.summary-content');
     
+    // Get the raw HTML content
+    let content = summaryContent.html();
+    
+    // Decode HTML entities
+    content = content
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+    
     // Convert markdown-style headers to proper HTML
-    summaryContent.html(summaryContent.html()
+    content = content
         .replace(/#{1,6}\s+(.+)/g, '<h3 class="mt-4 mb-3 text-primary">$1</h3>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/- (.+)/g, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/g, '<ul class="mb-3">$1</ul>')
-    );
+        .replace(/(<li>.*<\/li>)/g, '<ul class="mb-3">$1</ul>');
+    
+    // Handle paragraph breaks
+    content = content
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    
+    // Wrap in paragraphs if not already wrapped
+    if (!content.includes('<p>') && !content.includes('<h')) {
+        content = '<p>' + content + '</p>';
+    }
+    
+    // Update the content
+    summaryContent.html(content);
     
     // Add proper spacing and formatting
     summaryContent.find('p').addClass('mb-3');

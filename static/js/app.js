@@ -5,7 +5,6 @@
 
 // Global variables
 let currentAnalysisId = null;
-let progressInterval = null;
 
 // Utility functions
 const Utils = {

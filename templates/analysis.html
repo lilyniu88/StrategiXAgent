@@ -101,6 +101,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Cache busting: v2 -->
 <script>
 let sessionId = null;
 let progressInterval = null;
@@ -112,14 +113,18 @@ function cancelAnalysis() {
 }
 
 $(document).ready(function() {
+    console.log('Analysis page loaded');
+    console.log('jQuery version:', $.fn.jquery);
+    console.log('Starting analysis process...');
     // Start the analysis process
     startAnalysis();
     
     function startAnalysis() {
-        console.log('Starting analysis...');
+        console.log('startAnalysis function called');
         updateStatus('Starting analysis...', 'info');
         updateProgress(0);
         
+        console.log('Making AJAX request to /api/start_analysis');
         // Call the API to start analysis
         $.ajax({
             url: '/api/start_analysis',
@@ -212,7 +217,6 @@ $(document).ready(function() {
     }
     
     // Update time remaining
-    let startTime = Date.now();
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const remaining = Math.max(0, 300 - elapsed); // 5 minutes total

@@ -57,7 +57,7 @@ class ClinicalTrialsCollector:
                 if any(keyword in study_text for keyword in keywords):
                     study['research_area'] = research_config['name']
                     study['research_type'] = research_config['research_type']
-                    study['original_topic'] = research_config['original_topic']
+                    study['original_topic'] = research_config.get('original_topic', research_config.get('name', ''))
                     filtered_studies.append(study)
             
             logger.info(f"Retrieved {len(filtered_studies)} relevant trials for {research_config['name']} out of {len(studies)} total")

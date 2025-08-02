@@ -175,7 +175,7 @@ class OptimizedStrategiXAgent:
             f.write(f"# Competitive Landscape Summary\n\n")
             f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write(f"## Research Configuration\n\n")
-            f.write(f"- **Research Topic**: {research_config['original_topic']}\n")
+            f.write(f"- **Research Topic**: {research_config.get('original_topic', research_config.get('name', ''))}\n")
             f.write(f"- **Research Type**: {research_config['research_type'].title()}\n")
             f.write(f"- **Research Area**: {research_config['name']}\n")
             

@@ -217,7 +217,7 @@ class PubMedCollector:
             for article in articles:
                 article['research_area'] = research_config['name']
                 article['research_type'] = research_config['research_type']
-                article['original_topic'] = research_config['original_topic']
+                article['original_topic'] = research_config.get('original_topic', research_config.get('name', ''))
                 
             logger.info(f"Retrieved {len(articles)} PubMed articles for {research_config['name']}")
             return articles

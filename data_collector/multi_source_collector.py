@@ -123,7 +123,7 @@ class MultiSourceDataCollector:
                 record['data_source'] = source_name
                 record['research_area'] = research_config['name']
                 record['research_type'] = research_config['research_type']
-                record['original_topic'] = research_config['original_topic']
+                record['original_topic'] = research_config.get('original_topic', research_config.get('name', ''))
                 record['collection_timestamp'] = datetime.now().isoformat()
                 
                 merged_data.append(record)

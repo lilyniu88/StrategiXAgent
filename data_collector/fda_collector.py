@@ -183,7 +183,7 @@ class FDACollector:
                 'data_source': 'fda_approvals',
                 'research_area': research_config['name'],
                 'research_type': research_config['research_type'],
-                'original_topic': research_config['original_topic']
+                'original_topic': research_config.get('original_topic', research_config.get('name', ''))
             }
             
         except Exception as e:
@@ -206,7 +206,7 @@ class FDACollector:
                 'data_source': 'fda_safety',
                 'research_area': research_config['name'],
                 'research_type': research_config['research_type'],
-                'original_topic': research_config['original_topic']
+                'original_topic': research_config.get('original_topic', research_config.get('name', ''))
             }
             
         except Exception as e:
@@ -226,7 +226,7 @@ class FDACollector:
                 'data_source': 'fda_recalls',
                 'research_area': research_config['name'],
                 'research_type': research_config['research_type'],
-                'original_topic': research_config['original_topic']
+                'original_topic': research_config.get('original_topic', research_config.get('name', ''))
             }
             
         except Exception as e:
