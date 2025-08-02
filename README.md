@@ -1,28 +1,49 @@
 # StrategiX Agent
 
-An AI-powered pharmaceutical competitive intelligence tool that collects clinical trial data from ClinicalTrials.gov and uses Google's Gemini AI for comprehensive analysis and insights.
+An AI-powered pharmaceutical competitive intelligence tool that collects data from multiple sources (ClinicalTrials.gov, PubMed, FDA) and uses Google's Gemini AI for comprehensive analysis and insights.
 
-## 🚀 New Features
+## Features
 
-### Interactive Research Topic Input
-- **Dynamic Research Topics**: Enter any research topic or drug pipeline of interest via terminal
-- **AI-Powered Keyword Generation**: Automatically generates relevant search keywords using Google's Gemini AI
+### Multi-Source Data Collection
+- **Clinical Trials Data**: Fetches data from ClinicalTrials.gov API v2
+- **PubMed Articles**: Collects scientific publications and research papers
+- **FDA Regulatory Data**: Gathers drug approvals, safety alerts, and regulatory information
+- **Intelligent Data Merging**: Combines data from multiple sources for comprehensive analysis
+
+### AI-Powered Analysis
+- **Google Gemini AI Integration**: Uses advanced AI for intelligent data analysis and insights
+- **Competitive Intelligence**: Generates comprehensive competitive landscape reports
+- **Smart Fallback Analysis**: Provides meaningful insights even when AI is unavailable
+- **Rate Limit Handling**: Gracefully handles API quotas with intelligent fallback analysis
+
+### Interactive Research Interface
+- **Dynamic Research Topics**: Enter any research topic or drug pipeline of interest
+- **AI-Powered Keyword Generation**: Automatically generates relevant search keywords using AI
 - **Smart Fallback**: Uses intelligent keyword mapping when AI is unavailable
+- **Flexible Research Types**: Support for both general therapeutic areas and specific drug pipelines
 
 ### Drug Pipeline Research
 - **Specific Drug Analysis**: Research specific drugs or drug classes instead of broad therapeutic areas
 - **Pipeline-Focused Keywords**: Specialized keywords for drug development stages, safety, efficacy, and clinical endpoints
 - **Indication Targeting**: Specify target diseases or conditions for more focused analysis
 
-## Features
+### Web Interface
+- **Modern Web UI**: Flask-based web interface with Bootstrap 5 styling
+- **Real-time Progress Tracking**: Visual progress indicators and status updates
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Interactive Forms**: Dynamic research configuration with example topics
 
-- **Interactive Research Interface**: User-friendly terminal interface for research topic input
-- **AI-Powered Analysis**: Uses Google's Gemini AI for intelligent data analysis and keyword generation
-- **Clinical Trial Data Collection**: Fetches data from ClinicalTrials.gov API v2
-- **Competitive Intelligence**: Generates comprehensive competitive landscape reports
-- **Flexible Research Types**: Support for both general therapeutic areas and specific drug pipelines
+### Comprehensive Reporting
+- **Multiple Output Formats**: Saves results in YAML and Markdown formats
+- **Structured Analysis**: Detailed competitive landscape summaries
+- **Data Source Tracking**: Tracks which sources contributed to the analysis
+- **Professional Formatting**: Clean, readable reports with proper headers and bullet points
+
+### Advanced Features
 - **Active Trial Filtering**: Focuses on recruiting and active clinical trials
-- **Comprehensive Reporting**: Saves results in multiple formats (YAML, Markdown)
+- **Error Handling**: Robust error handling with graceful degradation
+- **Session Management**: Maintains user state across web interface sessions
+- **Example Topics**: Pre-configured research topics for quick start
 
 ## Installation
 
@@ -55,7 +76,7 @@ An AI-powered pharmaceutical competitive intelligence tool that collects clinica
 Run the main application for a guided research experience:
 
 ```bash
-python main.py
+python main_optimized.py
 ```
 
 The application will:
@@ -65,6 +86,15 @@ The application will:
 4. Collect and analyze relevant clinical trials
 5. Generate a comprehensive competitive landscape report
 
+### Web Interface
+For a modern web interface, run:
+
+```bash
+python app.py
+```
+
+Then open your browser to `http://localhost:5001`
+
 ### Example Research Topics
 - **General Topics**: "PD-1 inhibitors in lung cancer", "Alzheimer's disease treatments", "mRNA vaccines"
 - **Drug Pipelines**: "Keytruda", "Novo Nordisk diabetes pipeline", "CAR-T cell therapy"
@@ -73,7 +103,7 @@ The application will:
 Test the new interactive features without running the full analysis:
 
 ```bash
-python test_interactive_features.py
+python tests/test_interactive_features.py
 ```
 
 ## Configuration
@@ -99,96 +129,53 @@ data_collection:
 # Google Gemini API Settings
 gemini:
   model: "gemini-2.0-flash-exp"
+  max_tokens: 1000
   temperature: 0.7
-  max_output_tokens: 1024
 
 # Output Settings
 output:
-  summary_format: "markdown"
-  save_path: "output/"
-  update_frequency: "daily"
+  save_path: "output"
+  formats: ["yaml", "markdown"]
 ```
 
 ## Project Structure
 
 ```
 StrategiXAgent/
-├── main.py                          # Main application entry point
-├── config.yaml                      # Configuration file
-├── requirements.txt                 # Python dependencies
-├── .env                            # Environment variables (create this)
-├── data_collector/                 # Data collection modules
-│   ├── __init__.py
-│   └── clinical_trials_collector.py
-├── data_processor/                 # Data processing and analysis
-│   ├── __init__.py
+├── main_optimized.py              # Main application entry point
+├── app.py                         # Web interface
+├── config.yaml                    # Configuration file
+├── requirements.txt               # Python dependencies
+├── data_collector/               # Data collection modules
+│   ├── clinical_trials_collector.py
+│   ├── pubmed_collector.py
+│   ├── fda_collector.py
+│   └── multi_source_collector.py
+├── data_processor/               # Data processing modules
 │   ├── analyzer.py
-│   ├── keyword_generator.py        # AI-powered keyword generation
-│   └── research_interface.py       # Interactive research interface
-├── output/                         # Generated reports and data
-└── tests/                          # Test files
+│   ├── keyword_generator.py
+│   └── research_interface.py
+├── templates/                    # Web interface templates
+├── static/                       # Web interface assets
+└── tests/                       # Test scripts
 ```
 
-## Key Components
+## Testing
 
-### Keyword Generator (`data_processor/keyword_generator.py`)
-- **AI-Powered Generation**: Uses Google's Gemini AI to generate relevant keywords
-- **Drug Pipeline Keywords**: Specialized keywords for drug development research
-- **Fallback System**: Intelligent keyword mapping when AI is unavailable
+Run the test suite to verify everything is working:
 
-### Research Interface (`data_processor/research_interface.py`)
-- **Interactive Input**: User-friendly terminal interface
-- **Research Type Selection**: Choose between general topics and drug pipelines
-- **Configuration Generation**: Creates research configurations from user input
-
-### Clinical Trials Collector (`data_collector/clinical_trials_collector.py`)
-- **Dynamic Research**: Works with any research configuration
-- **Keyword Filtering**: Filters trials based on generated keywords
-- **Active Trial Focus**: Prioritizes recruiting and active trials
-
-## Output
-
-The application generates several output files:
-
-1. **Raw Trial Data** (`raw_trials_[topic]_[timestamp].yaml`): Collected clinical trial data
-2. **Analyses** (`analyses_[topic]_[timestamp].yaml`): AI-generated trial analyses
-3. **Competitive Landscape** (`competitive_landscape_[topic]_[timestamp].md`): Comprehensive summary report
-
-## Requirements
-
-- Python 3.8+
-- Google API key for Gemini AI
-- Internet connection for API access
-
-## Dependencies
-
-- `requests`: HTTP requests for API calls
-- `pyyaml`: YAML file handling
-- `python-dotenv`: Environment variable management
-- `google-generativeai`: Google's Gemini AI integration (optional)
-
-## Troubleshooting
-
-### AI Features Not Working
-If you encounter issues with AI features:
-1. Ensure your Google API key is correctly set in `.env`
-2. The application will automatically fall back to basic keyword generation
-3. Check that you have the `google-generativeai` package installed
-
-### No Trials Found
-If no relevant trials are found:
-1. Try a broader research topic
-2. Check that your keywords are relevant to clinical trials
-3. Verify your internet connection and API access
+```bash
+python tests/test_setup.py
+```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Add tests for new functionality
 5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.

@@ -189,7 +189,7 @@ def main():
     
     if passed == total:
         logger.info("🎉 All tests passed! StrategiX Agent is ready to use.")
-        logger.info("Run 'python main.py' to start the application.")
+        logger.info("Run 'python main_optimized.py' to start the application.")
     else:
         logger.error("❌ Some tests failed. Please fix the issues above before running the application.")
         sys.exit(1)

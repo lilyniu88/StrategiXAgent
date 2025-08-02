@@ -1,6 +1,7 @@
 # Data Collection Settings
-# Configuration for fetching data from ClinicalTrials.gov
+# Configuration for fetching data from multiple pharmaceutical data sources
 data_collection:
+  # ClinicalTrials.gov API configuration (WORKING)
   clinical_trials:
     base_url: "https://clinicaltrials.gov/api/v2/studies"
     fields:
@@ -13,6 +14,18 @@ data_collection:
       - "StartDate"      # When the trial started
       - "CompletionDate" # When the trial ended
     max_results: 100     # Maximum number of trials to fetch
+
+  # PubMed/NCBI API configuration (WORKING)
+  pubmed:
+    base_url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+    max_results: 50      # Maximum number of publications to fetch
+    api_key: ""          # Optional NCBI API key for higher rate limits
+
+  # FDA API configuration (PARTIALLY WORKING)
+  fda:
+    base_url: "https://api.fda.gov"
+    max_results: 50      # Reduced to avoid rate limits
+    api_key: ""          # Optional FDA API key for higher rate limits
 
 # Google Gemini API Settings
 # Configuration for the AI analysis and keyword generation

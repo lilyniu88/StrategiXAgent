@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 
 # Add project root to path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data_collector.clinical_trials_collector import ClinicalTrialsCollector
 from data_processor.analyzer import ClinicalTrialAnalyzer
@@ -29,9 +29,12 @@ def test_keyword_generation_performance():
     
     # Load config
     with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-        if config is None:
+        config_data = yaml.safe_load(f)
+        if config_data is None:
             raise ValueError("Config file is empty or invalid YAML")
+        if not isinstance(config_data, dict):
+            raise ValueError("Config file must contain a dictionary")
+        config = config_data
     
     # Initialize keyword generator
     keyword_gen = KeywordGenerator(config)
@@ -54,9 +57,12 @@ def test_data_collection_performance():
     
     # Load config
     with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-        if config is None:
+        config_data = yaml.safe_load(f)
+        if config_data is None:
             raise ValueError("Config file is empty or invalid YAML")
+        if not isinstance(config_data, dict):
+            raise ValueError("Config file must contain a dictionary")
+        config = config_data
     
     # Create research config
     research_config = {
@@ -168,7 +174,7 @@ def identify_bottlenecks():
     print(f"\n🔍 Performance Bottleneck Analysis")
     print("=" * 50)
     
-    print("Potential bottlenecks in main.py:")
+    print("Potential bottlenecks in main_optimized.py:")
     print("1. 🔄 API calls to ClinicalTrials.gov (network latency)")
     print("2. 🤖 AI analysis of each trial (API calls to Gemini)")
     print("3. 📊 Large dataset processing")

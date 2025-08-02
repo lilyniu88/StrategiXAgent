@@ -8,9 +8,8 @@ for pharmaceutical competitive intelligence with improved performance and user f
 
 import os
 import sys
-import yaml
-import logging
 import time
+import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -18,44 +17,40 @@ from typing import Dict, List, Any, Optional
 # Add project root to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from data_collector.clinical_trials_collector import ClinicalTrialsCollector
+from data_collector.multi_source_collector import MultiSourceDataCollector
 from data_processor.analyzer import ClinicalTrialAnalyzer
+from data_processor.keyword_generator import KeywordGenerator
 from data_processor.research_interface import ResearchInterface
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('strategix_agent.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
-
 class OptimizedStrategiXAgent:
-    """Optimized main application class for the StrategiX Agent."""
+    """
+    Optimized StrategiX Agent for pharmaceutical competitive intelligence.
+    
+    This agent collects data from multiple sources, analyzes it using AI,
+    and generates comprehensive competitive landscape reports.
+    """
     
     def __init__(self, config_path: str = "config.yaml"):
-        """Initialize the StrategiX Agent with configuration."""
-        self.config_path = config_path
-        self.config = self._load_config()
-        self.collector = ClinicalTrialsCollector(self.config)
+        """Initialize the agent with configuration."""
+        self.config = self._load_config(config_path)
+        self.collector = MultiSourceDataCollector(self.config)
         self.analyzer = ClinicalTrialAnalyzer(config_path)
+        self.keyword_generator = KeywordGenerator(self.config)
         self.research_interface = ResearchInterface(self.config)
         
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
         try:
-            with open(self.config_path, 'r') as file:
+            with open(config_path, 'r') as file:
                 config = yaml.safe_load(file)
             if config is None:
                 raise ValueError("Config file is empty or invalid YAML")
+            if not isinstance(config, dict):
+                raise ValueError("Config file must contain a dictionary")
             return config
         except Exception as e:
-            logger.error(f"Error loading config: {e}")
             raise
-            
+        
     def _ensure_output_directory(self):
         """Ensure the output directory exists."""
         output_path = Path(self.config['output']['save_path'])
@@ -71,54 +66,64 @@ class OptimizedStrategiXAgent:
             print(f"🔄 {message}")
         
     def collect_data(self, research_config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Collect clinical trial data for the specified research configuration."""
-        print(f"\n📊 Step 1/4: Collecting clinical trial data...")
+        """Collect data from multiple sources for the specified research configuration."""
+        print(f"\n📊 Step 1/4: Collecting data from multiple sources...")
         start_time = time.time()
         
-        # Collect clinical trials data for the research configuration
-        self._show_progress("Fetching trials from ClinicalTrials.gov")
-        trials_data = self.collector.fetch_trials_for_research(research_config)
+        # Collect data from all configured sources
+        self._show_progress("Fetching data from all sources")
+        all_data = self.collector.collect_all_data(research_config)
         
-        # Filter to active trials only
-        self._show_progress("Filtering active trials")
-        active_trials = self.collector.filter_active_trials(trials_data)
+        # Merge data from different sources
+        self._show_progress("Merging data from different sources")
+        merged_data = self.collector.merge_data_by_topic(all_data, research_config)
+        
+        # Filter to relevant data
+        self._show_progress("Filtering relevant data")
+        relevant_data = self.collector.filter_relevant_data(merged_data, research_config)
         
         end_time = time.time()
         print(f"✅ Data collection completed in {end_time - start_time:.1f} seconds")
-        print(f"📊 Found {len(active_trials)} active trials out of {len(trials_data)} total")
         
-        return active_trials
+        # Show data summary
+        summary = self.collector.get_data_summary(all_data)
+        print(f"📊 Data collected from {summary['total_sources']} sources:")
+        for source, info in summary['sources'].items():
+            print(f"   - {source}: {info['record_count']} records")
+        print(f"📊 Total relevant records: {len(relevant_data)}")
         
-    def analyze_data(self, trials_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Analyze the collected clinical trial data with progress indicators."""
-        print(f"\n🧠 Step 2/4: Analyzing clinical trials...")
+        return relevant_data
+        
+    def analyze_data(self, data_records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Analyze the collected data from multiple sources with progress indicators."""
+        print(f"\n🧠 Step 2/4: Analyzing data from multiple sources...")
         start_time = time.time()
         
-        # Analyze each trial with progress
+        # Analyze each record with progress
         analyses = []
-        total_trials = len(trials_data)
+        total_records = len(data_records)
         
-        if total_trials == 0:
-            print("⚠️ No trials to analyze")
+        if total_records == 0:
+            print("⚠️ No data to analyze")
             return []
             
-        print(f"📝 Analyzing {total_trials} trials (this may take a few minutes)...")
+        print(f"📝 Analyzing {total_records} records (this may take a few minutes)...")
         
-        for i, trial in enumerate(trials_data, 1):
-            self._show_progress("Analyzing trial", i, total_trials)
-            analysis = self.analyzer.analyze_trial(trial)
+        for i, record in enumerate(data_records, 1):
+            self._show_progress("Analyzing record", i, total_records)
+            analysis = self.analyzer.analyze_trial(record)
             analyses.append(analysis)
             
-            # Show progress every 5 trials or at the end
-            if i % 5 == 0 or i == total_trials:
+            # Show progress every 5 records or at the end
+            if i % 5 == 0 or i == total_records:
                 elapsed = time.time() - start_time
                 avg_time = elapsed / i
-                remaining = (total_trials - i) * avg_time
+                remaining = (total_records - i) * avg_time
                 print(f"   ⏱️ Estimated time remaining: {remaining:.1f} seconds")
         
         end_time = time.time()
         print(f"✅ Analysis completed in {end_time - start_time:.1f} seconds")
-        print(f"🧠 Successfully analyzed {len(analyses)} trials")
+        print(f"🧠 Successfully analyzed {len(analyses)} records")
         
         return analyses
         
@@ -136,7 +141,7 @@ class OptimizedStrategiXAgent:
         
         return summary
         
-    def save_results(self, trials_data: List[Dict[str, Any]], 
+    def save_results(self, data_records: List[Dict[str, Any]], 
                     analyses: List[Dict[str, Any]], 
                     summary: str,
                     research_config: Dict[str, Any]):
@@ -151,14 +156,14 @@ class OptimizedStrategiXAgent:
         safe_name = "".join(c for c in research_config['name'] if c.isalnum() or c in (' ', '-', '_')).rstrip()
         safe_name = safe_name.replace(' ', '_')
         
-        # Save raw trial data
-        self._show_progress("Saving raw trial data")
-        raw_data_file = output_dir / f"raw_trials_{safe_name}_{timestamp}.yaml"
+        # Save raw data records
+        self._show_progress("Saving raw data records")
+        raw_data_file = output_dir / f"raw_data_{safe_name}_{timestamp}.yaml"
         with open(raw_data_file, 'w') as f:
-            yaml.dump(trials_data, f, default_flow_style=False)
+            yaml.dump(data_records, f, default_flow_style=False)
         
         # Save analyses
-        self._show_progress("Saving trial analyses")
+        self._show_progress("Saving data analyses")
         analyses_file = output_dir / f"analyses_{safe_name}_{timestamp}.yaml"
         with open(analyses_file, 'w') as f:
             yaml.dump(analyses, f, default_flow_style=False)
@@ -183,16 +188,16 @@ class OptimizedStrategiXAgent:
             
             f.write(f"## Overview\n\n")
             f.write(summary)
-            f.write(f"\n\n## Trial Counts by Research Area\n\n")
+            f.write(f"\n\n## Data Sources Summary\n\n")
             
-            # Add trial counts by research area
-            area_counts = {}
-            for trial in trials_data:
-                area = trial.get('research_area', 'Unknown')
-                area_counts[area] = area_counts.get(area, 0) + 1
+            # Add data source counts
+            source_counts = {}
+            for record in data_records:
+                source = record.get('data_source', 'Unknown')
+                source_counts[source] = source_counts.get(source, 0) + 1
                 
-            for area, count in area_counts.items():
-                f.write(f"- **{area}**: {count} trials\n")
+            for source, count in source_counts.items():
+                f.write(f"- **{source}**: {count} records\n")
         
         end_time = time.time()
         print(f"✅ Results saved in {end_time - start_time:.1f} seconds")
@@ -210,36 +215,33 @@ class OptimizedStrategiXAgent:
             research_config = self.research_interface.get_interactive_research_config()
             
             # Step 2: Collect data
-            trials_data = self.collect_data(research_config)
+            data_records = self.collect_data(research_config)
             
-            if not trials_data:
-                print("\n❌ No relevant clinical trials found for your research topic.")
+            if not data_records:
+                print("\n❌ No relevant data found for your research topic.")
                 print("💡 Try adjusting your keywords or research focus.")
                 return
                 
             # Step 3: Analyze data
-            analyses = self.analyze_data(trials_data)
+            analyses = self.analyze_data(data_records)
             
             # Step 4: Generate summary
             summary = self.generate_summary(analyses, research_config)
             
             # Step 5: Save results
-            self.save_results(trials_data, analyses, summary, research_config)
+            self.save_results(data_records, analyses, summary, research_config)
             
             # Step 6: Display completion message
             print(f"\n🎉 Analysis complete!")
-            print(f"📊 Found and analyzed {len(trials_data)} relevant clinical trials")
+            print(f"📊 Found and analyzed {len(data_records)} relevant records")
             print(f"📋 Generated competitive landscape for: {research_config['name']}")
             print(f"📁 All results saved to: {self.config['output']['save_path']}")
             print(f"\n💡 Next steps:")
             print(f"   - Review the competitive landscape summary")
-            print(f"   - Check individual trial analyses")
+            print(f"   - Check individual data analyses")
             print(f"   - Export data for further analysis")
             
-            logger.info("StrategiX Agent execution completed successfully!")
-            
         except Exception as e:
-            logger.error(f"Error during execution: {e}")
             print(f"\n❌ An error occurred: {e}")
             raise
 
@@ -248,7 +250,6 @@ def main():
     try:
         # Check if .env file exists
         if not os.path.exists('.env'):
-            logger.error("No .env file found. Please create one with your GOOGLE_API_KEY.")
             print("Please create a .env file with your Google API key:")
             print("GOOGLE_API_KEY=your_api_key_here")
             return
@@ -258,10 +259,8 @@ def main():
         agent.run()
         
     except KeyboardInterrupt:
-        logger.info("Execution interrupted by user.")
         print("\n\n👋 Goodbye! Thanks for using StrategiX Agent.")
     except Exception as e:
-        logger.error(f"Application error: {e}")
         print(f"\n❌ An error occurred: {e}")
         sys.exit(1)
 

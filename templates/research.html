@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Research Configuration - StrategiX Agent{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold">
+                    <i class="fas fa-search me-3"></i>Research Configuration
+                </h1>
+                <p class="lead text-muted">
+                    Define your research topic and let our AI-powered system generate comprehensive competitive intelligence.
+                </p>
+            </div>
+
+            <!-- Research Form -->
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <form id="researchForm" method="POST">
+                        <!-- Research Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Research Type</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check research-type-card p-3 border rounded">
+                                        <input class="form-check-input" type="radio" name="research_type" id="type_topic" value="topic" checked>
+                                        <label class="form-check-label" for="type_topic">
+                                            <i class="fas fa-globe me-2 text-primary"></i>
+                                            <strong>General Topic</strong>
+                                            <br><small class="text-muted">Research a therapeutic area or general topic</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check research-type-card p-3 border rounded">
+                                        <input class="form-check-input" type="radio" name="research_type" id="type_pipeline" value="pipeline">
+                                        <label class="form-check-label" for="type_pipeline">
+                                            <i class="fas fa-pills me-2 text-primary"></i>
+                                            <strong>Drug Pipeline</strong>
+                                            <br><small class="text-muted">Research a specific drug or pipeline</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Research Topic -->
+                        <div class="mb-4">
+                            <label for="research_topic" class="form-label fw-bold">
+                                <i class="fas fa-lightbulb me-2"></i>Research Topic
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="research_topic" name="research_topic" 
+                                   placeholder="e.g., PD-1 inhibitors in lung cancer, Keytruda, Alzheimer's disease treatments" required>
+                            <div class="form-text">
+                                Enter your research topic, drug name, or therapeutic area of interest.
+                            </div>
+                        </div>
+
+                        <!-- Drug Pipeline Fields (initially hidden) -->
+                        <div id="pipelineFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-4">
+                                        <label for="drug_name" class="form-label fw-bold">
+                                            <i class="fas fa-pills me-2"></i>Drug Name (Optional)
+                                        </label>
+                                        <input type="text" class="form-control" id="drug_name" name="drug_name" 
+                                               placeholder="e.g., Keytruda, pembrolizumab">
+                                        <div class="form-text">
+                                            Optional: Provide additional drug name details
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-4">
+                                        <label for="indication" class="form-label fw-bold">
+                                            <i class="fas fa-stethoscope me-2"></i>Target Indication (Optional)
+                                        </label>
+                                        <input type="text" class="form-control" id="indication" name="indication" 
+                                               placeholder="e.g., NSCLC, breast cancer">
+                                        <div class="form-text">
+                                            Optional: Specify target disease or condition
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Examples Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-lightbulb me-2"></i>Example Topics
+                            </label>
+                            <div class="row" id="examplesContainer">
+                                <!-- Examples will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-rocket me-2"></i>Start Analysis
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress Modal -->
+            <div class="modal fade" id="progressModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-cog fa-spin me-2"></i>Processing Research
+                            </h5>
+                        </div>
+                        <div class="modal-body">
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-muted mb-0" id="progressText">Initializing...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Handle research type selection
+    $('input[name="research_type"]').change(function() {
+        if ($(this).val() === 'pipeline') {
+            $('#pipelineFields').slideDown();
+        } else {
+            $('#pipelineFields').slideUp();
+        }
+    });
+
+    // Load examples
+    loadExamples();
+
+    // Handle form submission
+    $('#researchForm').submit(function(e) {
+        e.preventDefault();
+        
+        // Show progress modal
+        $('#progressModal').modal('show');
+        
+        // Submit form via AJAX
+        $.ajax({
+            url: '{{ url_for("research") }}',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    // Redirect to analysis page
+                    window.location.href = response.redirect;
+                } else {
+                    alert('Error: ' + response.error);
+                    $('#progressModal').modal('hide');
+                }
+            },
+            error: function(xhr) {
+                let error = 'An error occurred';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    error = xhr.responseJSON.error;
+                }
+                alert('Error: ' + error);
+                $('#progressModal').modal('hide');
+            }
+        });
+    });
+
+    // Load examples from API
+    function loadExamples() {
+        $.get('/api/examples', function(data) {
+            const container = $('#examplesContainer');
+            data.examples.forEach(function(example) {
+                const card = $(`
+                    <div class="col-md-6 mb-2">
+                        <div class="example-card p-3 border rounded cursor-pointer" 
+                             data-topic="${example.topic}" data-type="${example.type}">
+                            <strong>${example.topic}</strong>
+                            <br><small class="text-muted">${example.description}</small>
+                        </div>
+                    </div>
+                `);
+                container.append(card);
+            });
+
+            // Handle example clicks
+            $('.example-card').click(function() {
+                const topic = $(this).data('topic');
+                const type = $(this).data('type');
+                
+                $('#research_topic').val(topic);
+                $(`input[name="research_type"][value="${type}"]`).prop('checked', true).trigger('change');
+                
+                // Highlight selected example
+                $('.example-card').removeClass('border-primary bg-light');
+                $(this).addClass('border-primary bg-light');
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Test script to demonstrate improved AI prompts and enhanced fallback logic.
+Test script for improved AI prompts and fallback logic.
 """
 
 import os
 import sys
 import yaml
-from typing import Dict, List, Any
+import logging
 
-# Add project root to path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data_processor.keyword_generator import KeywordGenerator
 from data_processor.analyzer import ClinicalTrialAnalyzer
+from data_processor.keyword_generator import KeywordGenerator
 
 def test_keyword_generation():
     """Test the improved keyword generation with specific prompts."""
@@ -21,9 +21,12 @@ def test_keyword_generation():
     
     # Load config
     with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-        if config is None:
+        config_data = yaml.safe_load(f)
+        if config_data is None:
             raise ValueError("Config file is empty or invalid YAML")
+        if not isinstance(config_data, dict):
+            raise ValueError("Config file must contain a dictionary")
+        config = config_data
     
     generator = KeywordGenerator(config)
     
@@ -83,73 +86,25 @@ def test_analysis_prompts():
         }
     ]
     
-    # Test the new analyze_trials method
+    # Test the new analyze_trials_batch method
     print("\n🔬 Testing AI Analysis with Specific Prompts")
     research_topic = "PD-1/PD-L1 inhibitors in NSCLC"
-    analysis = analyzer.analyze_trials(mock_trials, research_topic)
+    analyses = analyzer.analyze_trials_batch(mock_trials)
     
     print(f"Research Topic: {research_topic}")
-    print(f"Summary: {analysis.get('summary', 'No summary available')[:200]}...")
-    print(f"Key Insights: {len(analysis.get('key_insights', []))} insights generated")
-    print(f"Recommendations: {len(analysis.get('recommendations', []))} recommendations")
+    print(f"Number of analyses: {len(analyses)}")
     
-    # Test fallback analysis
-    print("\n🔄 Testing Fallback Analysis Logic")
-    fallback_analysis = analyzer._analyze_trials_fallback(mock_trials, research_topic)
+    # Show first analysis as example
+    if analyses:
+        first_analysis = analyses[0]
+        print(f"First Analysis Title: {first_analysis.get('title', 'No title')}")
+        print(f"First Analysis Preview: {first_analysis.get('analysis', 'No analysis')[:200]}...")
     
-    print(f"Fallback Summary: {fallback_analysis.get('summary', 'No summary available')[:200]}...")
-    print(f"Fallback Insights: {len(fallback_analysis.get('key_insights', []))} insights")
-    print(f"Fallback Recommendations: {len(fallback_analysis.get('recommendations', []))} recommendations")
-
-def test_landscape_summary():
-    """Test the improved landscape summary generation."""
-    print("\n\n📈 Testing Improved Landscape Summary")
-    print("=" * 50)
-    
-    analyzer = ClinicalTrialAnalyzer("config.yaml")
-    
-    # Mock analyses for testing
-    mock_analyses = [
-        {
-            'title': 'Study of Pembrolizumab in Advanced NSCLC',
-            'analysis': 'Promising immunotherapy approach with strong safety profile',
-            'metadata': {
-                'sponsor': 'Merck Sharp & Dohme LLC',
-                'phase': 'Phase 3',
-                'status': 'Recruiting'
-            }
-        },
-        {
-            'title': 'Atezolizumab Plus Chemotherapy in NSCLC',
-            'analysis': 'Combination therapy showing synergistic effects',
-            'metadata': {
-                'sponsor': 'Genentech, Inc.',
-                'phase': 'Phase 2',
-                'status': 'Active, not recruiting'
-            }
-        },
-        {
-            'title': 'Durvalumab Maintenance in NSCLC',
-            'analysis': 'Maintenance therapy demonstrating survival benefits',
-            'metadata': {
-                'sponsor': 'AstraZeneca',
-                'phase': 'Phase 3',
-                'status': 'Completed'
-            }
-        }
-    ]
-    
-    # Test landscape summary generation
-    print("\n🌐 Testing AI Landscape Summary")
-    summary = analyzer.generate_landscape_summary(mock_analyses)
+    # Test landscape summary with the analyses
+    print("\n🌐 Testing Landscape Summary with Batch Analyses")
+    summary = analyzer.generate_landscape_summary(analyses)
     print(f"Summary Length: {len(summary)} characters")
     print(f"Summary Preview: {summary[:300]}...")
-    
-    # Test fallback landscape summary
-    print("\n🔄 Testing Fallback Landscape Summary")
-    fallback_summary = analyzer._generate_landscape_summary_fallback(mock_analyses)
-    print(f"Fallback Summary Length: {len(fallback_summary)} characters")
-    print(f"Fallback Summary Preview: {fallback_summary[:300]}...")
 
 def test_specificity_improvements():
     """Test the specificity improvements in prompts."""
@@ -158,9 +113,12 @@ def test_specificity_improvements():
     
     # Load config
     with open('config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-        if config is None:
+        config_data = yaml.safe_load(f)
+        if config_data is None:
             raise ValueError("Config file is empty or invalid YAML")
+        if not isinstance(config_data, dict):
+            raise ValueError("Config file must contain a dictionary")
+        config = config_data
     
     generator = KeywordGenerator(config)
     
@@ -193,9 +151,6 @@ def main():
         
         # Test analysis prompt improvements
         test_analysis_prompts()
-        
-        # Test landscape summary improvements
-        test_landscape_summary()
         
         # Test specificity improvements
         test_specificity_improvements()

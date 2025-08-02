@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis in Progress - StrategiX Agent{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold">
+                    <i class="fas fa-cog fa-spin me-3"></i>Analysis in Progress
+                </h1>
+                <p class="lead text-muted">
+                    We're analyzing your research topic: <strong>{{ session.get('research_topic', 'Unknown') }}</strong>
+                </p>
+            </div>
+
+            <!-- Progress Card -->
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" id="progressBar"></div>
+                    </div>
+
+                    <!-- Status Messages -->
+                    <div class="status-container">
+                        <div class="alert alert-info" id="statusMessage">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="statusText">Starting analysis...</span>
+                        </div>
+                    </div>
+
+                    <!-- Current Step -->
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-tasks me-1"></i>
+                            Current step: <span id="currentStep">Initializing...</span>
+                        </small>
+                    </div>
+
+                    <!-- Estimated Time -->
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Estimated time: <span id="timeRemaining">2-5 minutes</span>
+                        </small>
+                    </div>
+
+                    <!-- Cancel Button -->
+                    <div class="text-center mt-4">
+                        <button class="btn btn-outline-secondary" onclick="cancelAnalysis()">
+                            <i class="fas fa-times me-2"></i>Cancel Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What's Happening Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>What's Happening
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                                <h6>Data Collection</h6>
+                                <small class="text-muted">
+                                    Collecting data from ClinicalTrials.gov, PubMed, FDA, and other sources
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-brain fa-2x text-primary mb-2"></i>
+                                <h6>AI Analysis</h6>
+                                <small class="text-muted">
+                                    Using Google Gemini AI to analyze competitive landscape and generate insights
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                                <h6>Report Generation</h6>
+                                <small class="text-muted">
+                                    Creating comprehensive competitive intelligence report with actionable insights
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let sessionId = null;
+let progressInterval = null;
+let startTime = Date.now();
+let lastProgressUpdate = Date.now();
+
+function cancelAnalysis() {
+    window.location.href = '{{ url_for("index") }}';
+}
+
+$(document).ready(function() {
+    // Start the analysis process
+    startAnalysis();
+    
+    function startAnalysis() {
+        console.log('Starting analysis...');
+        updateStatus('Starting analysis...', 'info');
+        updateProgress(0);
+        
+        // Call the API to start analysis
+        $.ajax({
+            url: '/api/start_analysis',
+            method: 'POST',
+            success: function(response) {
+                console.log('Analysis start response:', response);
+                if (response.success) {
+                    sessionId = response.session_id;
+                    updateStatus('Analysis started successfully', 'info');
+                    // Start polling for progress
+                    startProgressPolling();
+                } else {
+                    updateStatus('Error: ' + response.error, 'danger');
+                }
+            },
+            error: function(xhr) {
+                console.log('Analysis start error:', xhr);
+                let error = 'An error occurred starting analysis';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    error = xhr.responseJSON.error;
+                }
+                updateStatus('Error: ' + error, 'danger');
+            }
+        });
+    }
+    
+    function startProgressPolling() {
+        progressInterval = setInterval(function() {
+            if (sessionId) {
+                // Check for timeout (5 minutes)
+                const currentTime = Date.now();
+                const timeSinceStart = currentTime - startTime;
+                const timeSinceLastUpdate = currentTime - lastProgressUpdate;
+                
+                if (timeSinceStart > 300000) { // 5 minutes
+                    clearInterval(progressInterval);
+                    updateStatus('Analysis timed out after 5 minutes. Please try again.', 'danger');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '/api/progress/' + sessionId,
+                    method: 'GET',
+                    timeout: 10000, // 10 second timeout for each request
+                    success: function(response) {
+                        lastProgressUpdate = Date.now();
+                        updateProgress(response.progress);
+                        updateStatus(response.message, response.status === 'error' ? 'danger' : 'info');
+                        updateCurrentStep(response.step);
+                        
+                        if (response.status === 'completed') {
+                            clearInterval(progressInterval);
+                            updateStatus('Analysis completed successfully! Redirecting to results...', 'success');
+                            setTimeout(function() {
+                                window.location.href = '{{ url_for("results") }}';
+                            }, 2000);
+                        } else if (response.status === 'error') {
+                            clearInterval(progressInterval);
+                            updateStatus('Analysis failed: ' + response.message, 'danger');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.log('Progress polling error:', xhr);
+                        if (xhr.status === 0 || xhr.status === 408) {
+                            // Request timeout or connection error
+                            clearInterval(progressInterval);
+                            updateStatus('Connection timeout. The analysis may be taking longer than expected.', 'warning');
+                        } else {
+                            clearInterval(progressInterval);
+                            updateStatus('Error getting progress updates', 'danger');
+                        }
+                    }
+                });
+            }
+        }, 2000); // Poll every 2 seconds instead of 1
+    }
+    
+    function updateStatus(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : type === 'danger' ? 'alert-danger' : 'alert-info';
+        $('#statusMessage').removeClass('alert-info alert-success alert-danger').addClass(alertClass);
+        $('#statusText').text(message);
+    }
+    
+    function updateProgress(percentage) {
+        $('#progressBar').css('width', percentage + '%');
+    }
+    
+    function updateCurrentStep(step) {
+        $('#currentStep').text(step);
+    }
+    
+    // Update time remaining
+    let startTime = Date.now();
+    setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = Math.max(0, 300 - elapsed); // 5 minutes total
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        $('#timeRemaining').text(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    }, 1000);
+});
+</script>
+{% endblock %} 
